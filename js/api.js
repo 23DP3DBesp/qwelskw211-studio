@@ -22,7 +22,7 @@ globalThis.portfolioAPI = async function (path, options = {}) {
   let data;
   try { data = await response.json(); }
   catch { throw new Error(message('The server returned invalid data. Please try again later.', 'Сервер вернул некорректные данные. Повторите попытку позже.')); }
-  if (!response.ok) throw new Error(typeof data?.error === 'string' ? data.error : message(`Request failed (${response.status}).`, `Не удалось выполнить запрос (${response.status}).`));
+  if (!response.ok) throw Object.assign(new Error(typeof data?.error === 'string' ? data.error : message(`Request failed (${response.status}).`, `Не удалось выполнить запрос (${response.status}).`)), {field:data?.field});
   if (!data || typeof data !== 'object') throw new Error(message('The server returned incomplete data.', 'Сервер вернул неполные данные.'));
   return data;
 };

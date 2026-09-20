@@ -4,7 +4,7 @@ import adminHTML from '../admin/index.html?raw';
 import defaults from './default-settings.json';
 import copyDefaults from '../assets/copy-defaults.json';
 const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
-const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
+const fail=(message,status=400,field)=>{throw Object.assign(new Error(message),{status,field});};
 const stmt=(env,sql,...args)=>env.DB.prepare(sql).bind(...args);
 const now=()=>new Date().toISOString();
 const idPattern=/^[a-z0-9][a-z0-9-]{0,79}$/;
@@ -19,8 +19,11 @@ export function safeURL(value,{image=false,video=false}={}){
   return u.href;
 }
 export function validateProject(value){
+ if(typeof value.id!=='string'||!idPattern.test(value.id.trim()))fail('Адрес работы: используйте от 1 до 80 строчных латинских букв, цифр и дефисов. Начните с буквы или цифры. Например: my-project.',400,'id');
+ if(!['web','design','video'].includes(value.category))fail('Выберите категорию: Web, Design / Photo или Video.',400,'category');
+ if(!['draft','published','hidden'].includes(value.status))fail('Выберите статус: черновик, опубликован или скрыт.',400,'status');
+ if(!['number','string'].includes(typeof value.position)||String(value.position).trim()===''||!Number.isInteger(Number(value.position))||Number(value.position)<0||Number(value.position)>10000)fail('Порядок: укажите целое число от 0 до 10000, например 0.',400,'position');
  const p={id:text(value.id,80),category:text(value.category,16),status:text(value.status,16),position:Number(value.position),title:bilingual(value.title,160),description:bilingual(value.description,500),result:bilingual(value.result,6000),cover:safeURL(value.cover,{image:true}),gallery:[],video:safeURL(value.video,{video:true}),link:safeURL(value.link),tech:text(value.tech??'',300),concept:value.concept===true};
- if(!idPattern.test(p.id)||!['web','design','video'].includes(p.category)||!['draft','published','hidden'].includes(p.status)||!Number.isInteger(p.position)||p.position<0||p.position>10000)fail('Invalid project fields / Проверьте поля проекта');
  if(!Array.isArray(value.gallery)||value.gallery.length>24)fail('Maximum 24 gallery images');p.gallery=value.gallery.map(x=>safeURL(x,{image:true}));
  if(p.status==='published'&&(!p.title.en||!p.title.ru||!p.cover||(!p.result.en&&!p.video&&!p.gallery.length)))fail('Publishing requires EN/RU titles, a cover and a result / Для публикации нужны названия EN/RU, обложка и результат');
  return p;
@@ -159,4 +162,4 @@ async function asset(request,env,path,privatePage=false){
  const url=new URL(request.url);url.pathname=path;url.search='';const response=await env.ASSETS.fetch(new Request(url,request));
  const result=new Response(response.body,response);if(privatePage)result.headers.set('Cache-Control','no-store');return result;
 }
-export default {async fetch(request,env){try{const raw=await handle(request,env);const response=new Response(raw.body,raw);response.headers.set('X-Content-Type-Options','nosniff');response.headers.set('Referrer-Policy','strict-origin-when-cross-origin');return response;}catch(error){return json({error:error.status?error.message:'Server error / Ошибка сервера'},error.status||500);}}};
+export default {async fetch(request,env){try{const raw=await handle(request,env);const response=new Response(raw.body,raw);response.headers.set('X-Content-Type-Options','nosniff');response.headers.set('Referrer-Policy','strict-origin-when-cross-origin');return response;}catch(error){return json({error:error.status?error.message:'Server error / Ошибка сервера',...(error.status&&error.field?{field:error.field}:{})},error.status||500);}}};
