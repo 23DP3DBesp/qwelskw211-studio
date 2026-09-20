@@ -1,0 +1,43 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "qwelskw211-studio",
+  "main": "dist/server/index.js",
+  "compatibility_date": "2026-09-20",
+  "routes": [
+    {
+        "pattern": "qwelskw.studio",
+        "custom_domain": true
+    }
+  ],
+
+  "vars": {
+    "ADMIN_USERNAME": "qwelskw"
+  },
+
+  "assets": {
+  "directory": "./dist/client",
+  "binding": "ASSETS",
+  "run_worker_first": [
+    "/api/*",
+    "/admin",
+    "/admin/*",
+    "/media/*"
+        ]
+    },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "qwelskw-studio-db",
+      "database_id": "428960bb-beff-4d8f-896c-b76d993034c4"
+    }
+  ],
+
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "qwelskw-studio-media"
+    }
+  ]
+  
+}
